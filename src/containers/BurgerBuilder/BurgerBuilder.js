@@ -4,6 +4,8 @@ import Burger from '../../components/Burger/Burger'
 import BuildControls from '../../components/Burger/BuildControls/BuildControls'
 import Modal from '../../components/UI/Modal/Modal'
 import OrderSummary from '../../components/Burger/OrderSummary/OrderSummary'
+import axios from '../../axios-orders'
+import Spinner from '../../components/UI/Spinner/Spinner'
 
 const PRICES = {
     salad: .5,
@@ -22,7 +24,8 @@ class BurgerBuilder extends React.Component {
         },
         totalPrice: 4,
         purchasable: false,
-        showOrderSummary: false
+        showOrderSummary: false,
+        purchasing: false
     }
 
     showOrderHandler = () => {
@@ -30,18 +33,46 @@ class BurgerBuilder extends React.Component {
             showOrderSummary: true
         })
     }
-    hideOrderHandler = ()=>{
+    hideOrderHandler = () => {
         this.setState({
             showOrderSummary: false
         })
     }
 
-    continueOrderHandler = ()=>{
-        this.setState({
-            showOrderSummary: false
-        })
+    sleep= (ms)=>{
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    continueOrderHandler = () => {
         console.log('Starting order...')
-        alert('Starting order...')
+        this.setState({
+            purchasing: true
+        })
+        const order = {
+            ingredients: this.state.ingredients,
+            price: this.state.totalPrice,
+            customer: {
+                name: 'Dursun KOC',
+                address: 'Umraniye/Istanbul',
+                email: 'dk@dk.com'
+            },
+            deliveryMethod: 'fastest'
+        }
+        axios.post('/orders.json', order)
+            .then(async response => {
+                await this.sleep(2000);
+                console.log(response)
+                this.setState({
+                    showOrderSummary: false, purchasing: false
+                })
+            }).catch(async error => {
+                await this.sleep(2000);
+                console.log(error)
+                this.setState({
+                    showOrderSummary: false, purchasing: false
+                })
+            })
+
     }
 
     updatePurchasable(updatedIngredients) {
@@ -81,14 +112,23 @@ class BurgerBuilder extends React.Component {
 
 
     render() {
+        let modelContent = null
+        if (this.state.purchasing) {
+            modelContent = <Spinner />
+        }
+        if (this.state.showOrderSummary && !this.state.purchasing) {
+            modelContent =
+                <OrderSummary ingredients={this.state.ingredients}
+                    totalPrice={this.state.totalPrice}
+                    cancelOrderHandler={this.hideOrderHandler}
+                    continueOrderHandler={this.continueOrderHandler} />
+        }
+
         return (
             <Aux>
                 <Modal visible={this.state.showOrderSummary}
-                       hideModal={this.hideOrderHandler}>
-                    <OrderSummary ingredients={this.state.ingredients}
-                                  totalPrice={this.state.totalPrice}
-                                  cancelOrderHandler={this.hideOrderHandler}
-                                  continueOrderHandler={this.continueOrderHandler}/>
+                    hideModal={this.hideOrderHandler}>
+                    {modelContent}
                 </Modal>
                 <Burger ingredients={this.state.ingredients} />
                 <BuildControls
