@@ -6,6 +6,8 @@ import Modal from '../../components/UI/Modal/Modal'
 import OrderSummary from '../../components/Burger/OrderSummary/OrderSummary'
 import axios from '../../axios-orders'
 import Spinner from '../../components/UI/Spinner/Spinner'
+import WithErrorHandler from '../../hoc/WithErrorHandler'
+import Button from '../../components/UI/Button/Button'
 
 const PRICES = {
     salad: .5,
@@ -16,16 +18,30 @@ const PRICES = {
 
 class BurgerBuilder extends React.Component {
     state = {
-        ingredients: {
-            salad: 0,
-            bacon: 0,
-            cheese: 0,
-            meat: 0
-        },
+        ingredients: null,
+        ingredientsUrl: 'https://burger-builder-dk.firebaseio.com/ingredients',
         totalPrice: 4,
         purchasable: false,
         showOrderSummary: false,
-        purchasing: false
+        purchasing: false,
+        loaded: false,
+        error: null
+    }
+
+    componentDidMount() {
+        axios.get(this.state.ingredientsUrl)
+            .then(async (response) => {
+                // await this.sleep(30000)
+                this.setState({
+                    ingredients: response.data,
+                    loaded: true
+                })
+            }).catch(error => {
+                this.setState({
+                    error: error,
+                    loaded: false
+                })
+            })
     }
 
     showOrderHandler = () => {
@@ -39,7 +55,7 @@ class BurgerBuilder extends React.Component {
         })
     }
 
-    sleep= (ms)=>{
+    sleep = (ms) => {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
@@ -109,10 +125,49 @@ class BurgerBuilder extends React.Component {
     addIngredientHandlerGen = this.updateIngredientHandlerGen((a, b) => a + b)
     removeIngredientHandlerGen = this.updateIngredientHandlerGen((a, b) => a - b)
 
-
+    retryLoading = ()=>{
+        console.log('Retrying load...')
+        this.setState({error:null})
+        axios.get(this.state.ingredientsUrl+'.json')
+        .then(async (response) => {
+            await this.sleep(3000)
+            console.log('Loaded...')
+            this.setState({
+                ingredients: response.data,
+                loaded: true
+            })
+        }).catch(error => {
+            console.log('Error Again...')
+            this.setState({
+                error: error,
+                loaded: false
+            })
+        })
+    }
 
     render() {
         let modelContent = null
+        let burgerBody = <Spinner style={{ margin: 30 }} />
+        
+        if (this.state.error) {
+            burgerBody = <p style={{ textAlign: 'center', color: 'red' }}>Something went wrong!<br />Unable to load data!<br />
+            <Button btnType='Positive' onClick={this.retryLoading}>Retry</Button></p>
+        }
+
+        if (this.state.loaded) {
+            burgerBody = (
+                <Aux>
+                    <Burger ingredients={this.state.ingredients} />
+                    <BuildControls
+                        totalPrice={this.state.totalPrice}
+                        disabledValidator={this.disabledValidator}
+                        addIngredientHandlerGen={this.addIngredientHandlerGen}
+                        purchasable={this.state.purchasable}
+                        removeIngredientHandlerGen={this.removeIngredientHandlerGen}
+                        showOrderHandler={this.showOrderHandler}
+                    />
+                </Aux>)
+        }
         if (this.state.purchasing) {
             modelContent = <Spinner />
         }
@@ -130,19 +185,11 @@ class BurgerBuilder extends React.Component {
                     hideModal={this.hideOrderHandler}>
                     {modelContent}
                 </Modal>
-                <Burger ingredients={this.state.ingredients} />
-                <BuildControls
-                    totalPrice={this.state.totalPrice}
-                    disabledValidator={this.disabledValidator}
-                    addIngredientHandlerGen={this.addIngredientHandlerGen}
-                    purchasable={this.state.purchasable}
-                    removeIngredientHandlerGen={this.removeIngredientHandlerGen}
-                    showOrderHandler={this.showOrderHandler}
-                />
+                {burgerBody}
             </Aux>
         )
     }
 }
 
 
-export default BurgerBuilder
+export default WithErrorHandler(BurgerBuilder, axios)
