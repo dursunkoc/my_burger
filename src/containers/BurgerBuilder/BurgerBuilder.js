@@ -19,7 +19,7 @@ const PRICES = {
 class BurgerBuilder extends React.Component {
     state = {
         ingredients: null,
-        ingredientsUrl: 'https://burger-builder-dk.firebaseio.com/ingredients',
+        ingredientsUrl: 'https://burger-builder-dk.firebaseio.com/ingredients.json',
         totalPrice: 4,
         purchasable: false,
         showOrderSummary: false,
@@ -29,6 +29,7 @@ class BurgerBuilder extends React.Component {
     }
 
     componentDidMount() {
+        console.log('[BurgerBuilder.cdm]:', this.props);
         axios.get(this.state.ingredientsUrl)
             .then(async (response) => {
                 // await this.sleep(30000)
@@ -61,34 +62,9 @@ class BurgerBuilder extends React.Component {
 
     continueOrderHandler = () => {
         console.log('Starting order...')
-        this.setState({
-            purchasing: true
-        })
-        const order = {
-            ingredients: this.state.ingredients,
-            price: this.state.totalPrice,
-            customer: {
-                name: 'Dursun KOC',
-                address: 'Umraniye/Istanbul',
-                email: 'dk@dk.com'
-            },
-            deliveryMethod: 'fastest'
-        }
-        axios.post('/orders.json', order)
-            .then(async response => {
-                await this.sleep(2000);
-                console.log(response)
-                this.setState({
-                    showOrderSummary: false, purchasing: false
-                })
-            }).catch(async error => {
-                await this.sleep(2000);
-                console.log(error)
-                this.setState({
-                    showOrderSummary: false, purchasing: false
-                })
-            })
-
+        let queryString = '?'+Object.entries(this.state.ingredients).map(arr=>`${encodeURIComponent(arr[0])}=${encodeURIComponent(arr[1])}`).join('&')
+        queryString+=`&totalPrice=${this.state.totalPrice}`
+        this.props.history.push({pathname: '/checkout',search: queryString});
     }
 
     updatePurchasable(updatedIngredients) {
