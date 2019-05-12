@@ -13,7 +13,7 @@ class ContactData extends Component {
             street: { elementType: 'input', elementConfig: { type: 'text', placeholder: 'Street' }, value: '', touched:false, valid:false, validation:{} },
             postalCode: { elementType: 'input', elementConfig: { type: 'text', placeholder: 'ZIP Code' }, value: '', touched:false, valid:false, validation:{minLength: 4, maxLength:6} },
             country: { elementType: 'input', elementConfig: { type: 'text', placeholder: 'Country' }, value: '', touched:false, valid:false, validation:{} },
-            deliveryMethod: { elementType: 'select', elementConfig: { options: [{ value: 'fastest', displayValue: 'Fastest' }, { value: 'cheapest', displayValue: 'Cheapest' }] }, value: '', touched:false, valid:false, validation:{} }
+            deliveryMethod: { elementType: 'select', elementConfig: { options: [{ value: 'fastest', displayValue: 'Fastest' }, { value: 'cheapest', displayValue: 'Cheapest' }] }, value: 'fastest', touched:false, valid:false, validation:{} }
         },
         loading: false
     }
